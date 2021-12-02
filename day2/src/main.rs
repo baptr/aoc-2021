@@ -11,14 +11,18 @@ fn main() -> std::io::Result<()> {
 
     let mut h = 0;
     let mut d = 0;
+    let mut aim = 0;
     for line in reader.lines() {
         let l = line?;
         let (dir, dist_str) = l.split_whitespace().next_tuple().unwrap();
         let dist = dist_str.parse::<i32>().unwrap();
         match dir {
-            "forward" => h += dist,
-            "up" => d -= dist,
-            "down" => d += dist,
+            "forward" => {
+                h += dist;
+                d += dist*aim;
+            },
+            "up" => aim -= dist,
+            "down" => aim += dist,
             _ => println!("Unhandled direction {}", dir),
         }
     }
