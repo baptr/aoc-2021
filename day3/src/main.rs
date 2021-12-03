@@ -4,40 +4,59 @@ use std::io::BufReader;
 use std::io::prelude::*;
 //use itertools::Itertools;
 
+fn high(vec: &Vec<u32>, pos: i32) -> Vec<u32> {
+    let half: usize = vec.len()/2;
+    let det = vec[half] >> pos;
+    let mut out: Vec<u32> = Vec::new();
+    for v in vec {
+        if (v>>pos) == det {
+            out.push(*v);
+        }
+    }
+    return out;
+}
+
+fn low(vec: &Vec<u32>, pos: i32) -> Vec<u32> {
+    let half: usize = vec.len()/2;
+    let det = (vec[half] >> pos) ^ 1;
+    let mut out: Vec<u32> = Vec::new();
+    for v in vec {
+        if (v>>pos) == det {
+            out.push(*v);
+        }
+    }
+    return out;
+}
+
 fn main() -> std::io::Result<()> {
     let name = env::args().nth(1).expect("missing input filename");
     let file = File::open(name)?;
     let reader = BufReader::new(file);
 
-    let mut vec: Vec<i32> = Vec::new();
-    let mut count = 0;
+    let mut vec: Vec<u32> = Vec::new();
+    let mut width: i32 = 0;
     for line in reader.lines() {
         let l = line?;
-        let cv: Vec<char> = l.chars().collect();
-        for (i, c) in cv.iter().enumerate() {
-            if i >= vec.len() {
-                vec.push(0);
-            }
-            if *c == '1' {
-                vec[i] += 1;
-            }
+        if width == 0 {
+            width = l.len() as i32;
         }
-        count+=1;
+        vec.push(u32::from_str_radix(&l, 2).unwrap());
     }
-    println!("vec: {:#?} count: {}", vec, count);
-    
-    let mut a = 0;
-    let mut b = 0;
-    for v in vec {
-        a <<= 1;
-        b <<= 1;
-        if v < count/2 {
-            a |= 1;
-        } else {
-            b |= 1;
-        }
+    vec.sort();
+
+    let mut pos = width-1;
+    let mut h = high(&vec, pos);
+    while h.len() > 1 {
+        pos-=1;
+        h = high(&h, pos);
     }
-    println!("a={} b={} a*b={}", a, b, a*b);
+    pos = width-1;
+    let mut l = low(&vec, pos);
+    while l.len() > 1 {
+        pos-=1;
+        l = low(&l, pos);
+    }
+    println!("high: {} low: {} h*l: {}", h[0], l[0], h[0]*l[0]);
 
     Ok(())
 }
