@@ -27,10 +27,14 @@ fn main() -> std::io::Result<()> {
                 next[i-1] += school[i];
             }
         }
-        println!("after day {}: {}, {}, {}, {}, {}, {}, {}, {}", day, next[0], next[1], next[2], next[3], next[4], next[5], next[6], next[7]);
+        println!("after day {}: {:?}", day, next);
         school = next;
     }
-    println!("total fish: {}", school[0]+school[1]+school[2]+school[3]+school[4]+school[5]+school[6]+school[7]+school[8]);
+    let mut total = 0;
+    for v in school {
+        total += v;
+    }
+    println!("total fish: {}", total);
 
     Ok(())
 }
