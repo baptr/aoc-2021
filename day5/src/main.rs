@@ -15,23 +15,47 @@ impl Board {
         };
     }
 
+    fn mark_diag(&mut self, x1: usize, y1: usize, x2: usize, y2: usize) {
+        if y2 >= self.grid.len() {
+            self.grid.resize_with(y2+1, || { Vec::<u16>::new() });
+        }
+        let mut x:isize = x1 as isize;
+        for y in y1..=y2 {
+            if x as usize >= self.grid[y].len() {
+                self.grid[y].resize(x as usize +1, 0);
+            }
+            self.grid[y][x as usize] += 1;
+            if x1 < x2 {
+                x += 1;
+            } else {
+                x -= 1;
+            }
+        }
+    }
+
     fn mark(&mut self, v: Vec::<Vec<usize>>) {
         let mut x1 = v[0][0];
         let mut y1 = v[0][1];
         let mut x2 = v[1][0];
         let mut y2 = v[1][1];
         if x1 != x2 && y1 != y2 {
+            // XXX Point struct
+            if y2 < y1 {
+                self.mark_diag(x2, y2, x1, y1);
+            } else { 
+                self.mark_diag(x1, y1, x2, y2);
+            }
             return;
         }
         if x2 < x1 || y2 < y1 {
             std::mem::swap(&mut x1, &mut x2);
             std::mem::swap(&mut y1, &mut y2);
         }
-        if y2 > self.grid.len() {
+        if y2 >= self.grid.len() {
             self.grid.resize_with(y2+1, || { Vec::<u16>::new() });
         }
         for y in y1..=y2 {
-            if x2 > self.grid[y].len() {
+            if x2 >= self.grid[y].len() {
                 self.grid[y].resize(x2+1, 0);
             }
             for x in x1..=x2 {
