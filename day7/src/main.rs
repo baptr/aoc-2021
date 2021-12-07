@@ -34,7 +34,8 @@ fn main() -> std::io::Result<()> {
     for pos in min..=max {
         let mut cost = 0;
         for (start, count) in crabs.iter() {
-            cost += (*start-pos).abs() * count;
+            let c = (*start-pos).abs();
+            cost += count*(c+1)*c/2;
         }
         if cost < min_cost {
             min_cost = cost;
