@@ -43,6 +43,5 @@ fn main() -> std::io::Result<()> {
         }
     }
     println!("moving to {} costs: {}", min_pos, min_cost);
-
     Ok(())
 }
