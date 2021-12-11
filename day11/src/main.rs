@@ -82,7 +82,7 @@ fn main() -> std::io::Result<()> {
     }
 
     let mut part1:u64 = 0;
-    for _day in 1..=100 {
+    for _day in 1..=1000 {
         let mut flashed = Vec::new();
         let mut daily = 1;
         loop {
@@ -126,7 +126,13 @@ fn main() -> std::io::Result<()> {
             }
         }
         println!("day {} ended with {} flashes", _day, flashed.len());
-        part1 += flashed.len() as u64;
+        if _day <= 100 {
+            part1 += flashed.len() as u64;
+        }
+        if flashed.len() == 100 {
+            println!("part2: {}", _day);
+            break;
+        }
     }
     println!("part1: {}", part1);
 
