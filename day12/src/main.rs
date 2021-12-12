@@ -2,6 +2,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
+use std::option::Option;
 //use std::cmp::Ordering;
 //use std::cell::Cell;
 //use std::cell::RefCell;
@@ -15,17 +16,41 @@ struct Cave {
     neighbors: Vec<String>
 }
 
-fn explore(caves: &HashMap<String,Cave>, path: Vec<String>) -> Vec<Vec<String>> {
+struct Path {
+    doubled: bool,
+    steps: Vec<String>
+}
+
+impl Path {
+    fn step(&self, n: &String) -> Option<Path> {
+        if n == "start" { return None; }
+        let mut doubled = self.doubled;
+        if &n[0..1]>="a" && self.steps.contains(n) {
+            if doubled {
+                return None;
+            }
+            doubled = true;
+        }
+        let mut p = Path{
+            doubled: doubled,
+            steps: self.steps.clone(),
+        };
+        p.steps.push(n.clone());
+        return Some(p);
+    }
+}
+
+fn explore(caves: &HashMap<String,Cave>, path: Path) -> Vec<Vec<String>> {
     let mut out:Vec<Vec<String>> = Vec::new();
-    let tail = caves.get(path.last().unwrap()).unwrap();
+    let tail = caves.get(path.steps.last().unwrap()).unwrap();
     for n in &tail.neighbors {
-        if &n[0..1]>="a" && path.contains(&n) { continue; }
-        let mut p = path.clone();
-        p.push(n.clone());
+        let p = path.step(&n);
+        if p.is_none() { continue; }
+        let p = p.unwrap();
         if n == "end" {
-            out.push(p);
+            out.push(p.steps);
         } else {
-            let got = explore(&caves, p);
+            let got = explore(caves, p);
             out.extend(got);
         }
     }
@@ -60,7 +85,7 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    let paths = explore(&caves, vec!["start".to_string()]);
+    let paths = explore(&caves, Path{doubled: false, steps: vec!["start".to_string()]});
     let part1 = paths.len();
     for p in &paths {
         println!("{:?}", p);
