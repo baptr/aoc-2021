@@ -13,8 +13,7 @@ use std::cmp;
 //use std::collections::HashMap;
 //use itertools::Itertools;
 
-const Y_DEBUG:bool = false;
-const X_DEBUG:bool = false;
+const DEBUG_FOLD: bool = false;
 
 fn dump(grid: &Vec<Vec<bool>>) {
     let h = 3;
@@ -36,65 +35,35 @@ fn fold(grid: Vec<Vec<bool>>, crease: &(String, usize)) -> Vec<Vec<bool>> {
     let mut out = Vec::new();
     if crease.0 == "y" {
         for i in 0..crease.1 {
-            let mut row = Vec::new();
-            let a = &grid[i];
-            let b = &grid[grid.len()-1-i];
-            let m = cmp::max(a.len(), b.len());
-            for j in 0..m {
-                let mut v = false;
-                if j < a.len() {
-                    v |= a[j];
+            out.push(grid[i].clone());
+        }
+        let end = cmp::min(grid.len(),2*crease.1+1);
+        for i in crease.1+1..end {
+            let o = 2*crease.1-i;
+            for (p, v) in grid[i].iter().enumerate() {
+                if *v {
+                    out[o][p] |= true;
                 }
-                if j < b.len() {
-                    v |= b[j];
-                }
-                row.push(v);
             }
-            if Y_DEBUG {
-                println!("folding y={},{}:", i, grid.len()-1-i);
-                for v in a {
-                    print!("{}", if *v { "#" } else { " " });
-                }
-                println!();
-                for v in b {
-                    print!("{}", if *v { "#" } else { " " });
-                }
-                println!();
-                for v in &row {
-                    print!("{}", if *v { "#" } else { " " });
-                }
-                println!();
-            }
-            out.push(row);
         }
     } else {
         for old in grid {
             let mut row = Vec::new();
             let end = cmp::min(crease.1, old.len());
             row.extend(&old[..end]);
-            for a in crease.1+1..old.len() {
-                let b = old.len()-1-a;
+            for i in 1..=crease.1 {
+            //for a in crease.1+1..old.len() {
+                let a = crease.1+i;
+                let b = crease.1-i;
+                //let b = old.len()-1-a;
+                if a >= old.len() { break; }
+                if b >= row.len() { continue; }
                 row[b] |= old[a];
-            }
-            if X_DEBUG {
-                println!("folding:");
-                for (i, v) in old.iter().enumerate() {
-                    if i == crease.1 {
-                        print!("|");
-                    } else {
-                        print!("{}", if *v { "#" } else { "." });
-                    }
-                }
-                println!();
-                for v in &row {
-                    print!("{}", if *v { "#" } else { " " });
-                }
-                println!();
             }
             out.push(row);
         }
     }
-    dump(&out);
+    if DEBUG_FOLD { dump(&out); }
     return out;
 }
 
@@ -139,7 +108,7 @@ fn main() -> std::io::Result<()> {
     }
 
     println!("grid height: {} fold len: {}", grid.len(), folds.len());
-    dump(&grid);
+    if DEBUG_FOLD { dump(&grid); }
 
     grid = fold(grid, &folds[0]);
     let mut part1 = 0;
