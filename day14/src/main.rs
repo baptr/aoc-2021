@@ -13,18 +13,43 @@ use std::io::prelude::*;
 use std::collections::HashMap;
 //use itertools::Itertools;
 
-fn step(old: &String, rules: &HashMap<String, String>) -> String {
-    let mut out = String::new();
-    for i in 0..old.len()-1 {
-        let k = &old[i..i+2];
-        //let v = rules.get(k);
-        out.extend(old[i..i+1].chars());
-        let v = rules.get(k);
-        if v.is_some() {
-            out.extend(v.unwrap().chars());
+fn apply(pair: &String, steps: usize, rules: &HashMap<String,String>, memo: &mut HashMap<&String,Vec<HashMap<String,u64>>>) -> HashMap<String,u64> {
+    {
+        let seen = &memo.get(pair).unwrap()[steps];
+        if seen.len() > 0 {
+            return seen.clone();
         }
     }
-    out.extend(old[old.len()-1..].chars());
+
+    let v = rules.get(pair).unwrap();
+    if steps == 0 {
+        let out = &mut memo.get_mut(pair).unwrap()[steps];
+        out.insert(v.to_string(), 1);
+        return out.clone();
+    }
+
+    let a = pair[0..1].to_string() + v;
+    let b = v.clone() + &pair[1..2].to_string();
+
+    let mut out = HashMap::new();
+    out.insert(v.to_string(), 1);
+
+    let left = apply(&a, steps-1, rules, memo);
+    for (k, v) in left {
+        match out.get_mut(&k) {
+            Some(o) => *o += v,
+            None => {out.insert(k.to_string(), v); ()},
+        }
+    }
+
+    let right = apply(&b, steps-1, rules, memo);
+    for (k, v) in right {
+        match out.get_mut(&k) {
+            Some(o) => *o += v,
+            None => {out.insert(k.to_string(), v); ()},
+        }
+    }
+    memo.get_mut(pair).unwrap()[steps] = out.clone();
     return out;
 }
 
@@ -44,22 +69,34 @@ fn main() -> std::io::Result<()> {
     }
     println!("base={} rules.len={}", base, rules.len());
 
-    let mut vals = base.clone();
-    for i in 1..=10 {
-        vals = step(&vals, &rules);
-        println!("After step {} len={}: {}", i, vals.len(), vals);
+    let steps = 40;
+    let mut memo = HashMap::new();
+    for (k, _) in &rules {
+        let mut m = Vec::new();
+        m.resize(steps, HashMap::<String,u64>::new());
+        memo.insert(k, m);
     }
 
     let mut counts = HashMap::new();
-    for c in vals.chars() {
-        match counts.get_mut(&c) {
-            Some(v) => *v += 1,
-            None => {counts.insert(c, 1); ()},
-        };
+    for i in 0..base.len()-1 {
+        let part = apply(&base[i..i+2].to_string(), steps-1, &rules, &mut memo);
+        for (k, v) in part {
+            match counts.get_mut(&k) {
+                Some(o) => *o += v,
+                None => {counts.insert(k.to_string(), v); ()},
+            }
+        }
     }
-    println!("counts: {:?}", counts);
+    for i in 0..base.len() {
+        let k = &base[i..i+1];
+        match counts.get_mut(k) {
+            Some(o) => *o += 1,
+            None => {counts.insert(k.to_string(), 1); ()},
+        }
+    }
+    println!("{:?}", counts);
 
-    let mut min = 2147483647;
+    let mut min = 99999999999999;
     let mut max = 0;
     for (_, v) in counts {
         if v < min { min = v }
