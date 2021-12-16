@@ -2,7 +2,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
-//use std::cmp;
+use std::cmp;
 //use std::option::Option;
 //use std::cmp::Ordering;
 //use std::cell::Cell;
@@ -103,6 +103,28 @@ fn part1(p: &Packet) -> u64 {
     return v;
 }
 
+fn part2(p :&Packet) -> u64 {
+    return match &p.payload {
+    Payload::Literal(l) => *l,
+    Payload::SubPackets(children) => {
+        let mut sub_vals = Vec::new();
+        for c in children {
+            sub_vals.push(part2(c));
+        }
+        return match p.type_id {
+            0 => sub_vals.iter().fold(0, |acc, x| acc + x),
+            1 => sub_vals.iter().fold(1, |acc, x| acc * x),
+            2 => sub_vals.iter().fold(u64::MAX, |acc, x| cmp::min(acc, *x)),
+            3 => sub_vals.iter().fold(0, |acc, x| cmp::max(acc, *x)),
+            5 => if sub_vals[0] > sub_vals[1] { 1 } else { 0 },
+            6 => if sub_vals[0] < sub_vals[1] { 1 } else { 0 },
+            7 => if sub_vals[0] == sub_vals[1] { 1 } else { 0 },
+            _ => u64::MAX,
+        };
+    }
+    };
+}
+
 fn main() -> std::io::Result<()> {
     let name = env::args().nth(1).expect("missing input filename");
     let file = File::open(name)?;
@@ -136,6 +158,7 @@ fn main() -> std::io::Result<()> {
     println!("packet={:?}", p);
 
     println!("part1={}", part1(&p));
+    println!("part2={}", part2(&p));
 
     Ok(())
 }
