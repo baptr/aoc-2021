@@ -134,10 +134,21 @@ impl Pair {
     }
 
     fn add(self, other: Self) -> Pair {
-        return Pair{
+        let mut p = Pair{
             left: Element::Pair(Box::new(self)),
             right: Element::Pair(Box::new(other)),
         };
+
+        loop {
+            let (v, b) = p.reduce();
+            if b {
+                //println!("** red={}", v.to_string());
+                p = v;
+            } else {
+                break;
+            }
+        }
+        return p;
     }
 
     fn magnitude(&self) -> u64 {
@@ -235,6 +246,10 @@ impl Pair {
     fn to_string(&self) -> String {
         format!("[{},{}]", self.left.to_string(), self.right.to_string())
     }
+
+    fn clone(&self) -> Pair {
+        return Pair{left: self.left.clone(), right: self.right.clone()};
+    }
 }
 
 fn main() -> std::io::Result<()> {
@@ -242,32 +257,29 @@ fn main() -> std::io::Result<()> {
     let file = File::open(name)?;
     let reader = BufReader::new(file);
 
-    let mut lines = reader.lines();
-    let first = lines.next().unwrap()?;
-    let mut fch = first.chars();
-    fch.next();
-    let mut val = Pair::new(&mut fch);
-    println!(" start={}", val.to_string());
+    let lines = reader.lines();
+    let mut vals = Vec::new();
     for line in lines {
         let l = line?;
         let mut c_iter = l.chars();
         c_iter.next(); // leading [
         let new = Pair::new(&mut c_iter);
-        println!("+ next={}", new.to_string());
-        val = val.add(new);
-        println!("=  now={}", val.to_string());
-        loop {
-            let (v, b) = val.reduce();
-            if b {
-                println!("** red={}", v.to_string());
-                val = v;
-            } else {
-                break;
+        vals.push(new);
+    }
+
+    let mut max = 0;
+    for (i, a) in vals.iter().enumerate() {
+        for (j, b) in vals.iter().enumerate() {
+            if i == j { continue }
+            let v = a.clone().add(b.clone());
+            let m = v.magnitude();
+            if m > max {
+                max = m;
             }
         }
     }
 
-    println!("part1={}", val.magnitude());
+    println!("part2={}", max);
 
     Ok(())
 }
