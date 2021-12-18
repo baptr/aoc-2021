@@ -75,11 +75,30 @@ impl Element {
             Element::Number(n) => Element::Number(*n + carry),
             Element::Pair(p) => Element::Pair(Box::new(Pair{
                 left: p.left.clone(),
-                right: p.right.carry_left(carry),
+                right: p.right.carry_right(carry),
             })),
         }
     }
 
+    fn split(&self) -> Element {
+        if let Element::Number(n) = self {
+            let l = ((*n as f32)/2.0).floor();
+            let r = ((*n as f32)/2.0).ceil();
+            return Element::Pair(Box::new(Pair{
+                left: Element::Number(l as u8),
+                right: Element::Number(r as u8),
+            }));
+        } else {
+            panic!("split pair {:?}", self);
+        }
+    }
+
+    fn to_string(&self) -> String {
+        return match self {
+            Element::Number(n) => format!("{}", *n),
+            Element::Pair(p) => p.to_string(),
+        };
+    }
 }
 
 #[derive(Debug)]
@@ -151,7 +170,7 @@ impl Pair {
 
         let (rl, rb, _) = self.right.would_explode(depth);
         if rb {
-            if depth > 3 {
+            if depth >= 3 {
                 return (Pair{left: self.left.carry_right(rl), right: Element::Number(0)}, true);
             }
             if let Element::Pair(rp) = &self.right {
@@ -165,6 +184,57 @@ impl Pair {
 
         return (Pair{left: self.left.clone(), right: self.right.clone()}, false);
     }
+
+    fn split(&self) -> (Pair, bool) {
+        let mut split = false;
+        let l:Element = match &self.left {
+            Element::Number(n) => {
+                if *n >= 10 {
+                    split = true;
+                    self.left.split()
+                } else {
+                    Element::Number(*n)
+                }
+            },
+            Element::Pair(p) => {
+                let (s, b) = p.split();
+                split = b;
+                Element::Pair(Box::new(s))
+            }
+        };
+        if split {
+            return (Pair{left: l, right: self.right.clone()}, true);
+        }
+        let r:Element = match &self.right {
+            Element::Number(n) => {
+                if *n >= 10 {
+                    split = true;
+                    self.right.split()
+                } else {
+                    Element::Number(*n)
+                }
+            },
+            Element::Pair(p) => {
+                let (s, b) = p.split();
+                split = b;
+                Element::Pair(Box::new(s))
+            }
+        };
+        return (Pair{left: l, right: r}, split);
+    }
+
+    fn reduce(&self) -> (Pair, bool) {
+        let (p, b) = self.explode(0);
+        if b {
+            return (p, b);
+        }
+
+        return self.split();
+    }
+
+    fn to_string(&self) -> String {
+        format!("[{},{}]", self.left.to_string(), self.right.to_string())
+    }
 }
 
 fn main() -> std::io::Result<()> {
@@ -177,19 +247,19 @@ fn main() -> std::io::Result<()> {
     let mut fch = first.chars();
     fch.next();
     let mut val = Pair::new(&mut fch);
-    println!(" start={:?}", val);
+    println!(" start={}", val.to_string());
     for line in lines {
         let l = line?;
         let mut c_iter = l.chars();
         c_iter.next(); // leading [
         let new = Pair::new(&mut c_iter);
-        println!("+ next={:?}", new);
+        println!("+ next={}", new.to_string());
         val = val.add(new);
-        println!("=  now={:?}", val);
+        println!("=  now={}", val.to_string());
         loop {
-            let (v, b) = val.explode(0);
+            let (v, b) = val.reduce();
             if b {
-                println!("val exploded!\n** now={:?}", v);
+                println!("** red={}", v.to_string());
                 val = v;
             } else {
                 break;
