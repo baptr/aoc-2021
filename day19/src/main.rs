@@ -23,7 +23,7 @@ type Pos = (i16, i16, i16);
 
 trait Permutable {
     fn perm(&self, axis: u8, neg: u8) -> Self;
-    fn offset(&self, other: &Self) -> Self;
+    fn minus(&self, other: &Self) -> Self;
     fn len2(&self) -> i32;
 }
 
@@ -55,7 +55,7 @@ impl Permutable for Pos {
         };
     }
 
-    fn offset(&self, o: &Pos) -> Pos {
+    fn minus(&self, o: &Pos) -> Pos {
         return (self.0-o.0, self.1-o.1, self.2-o.2);
     }
 
@@ -85,7 +85,7 @@ fn dist_set(input: &HashSet<Pos>) -> HashSet<Pos> {
         let mut min:Pos = (0,0,0);
         for (j, b) in input.iter().enumerate() {
             if i == j { continue }
-            let t = a.offset(b);
+            let t = a.minus(b);
             let l = t.len2();
             if l < min_dist {
                 min_dist = l;
@@ -127,7 +127,7 @@ fn find_offset(a: &HashSet<Pos>, b: &HashSet<Pos>) -> Pos {
     let mut counts = HashMap::new();
     for f in a {
         for g in b {
-            let o = g.offset(f);
+            let o = g.minus(f);
             match counts.get_mut(&o) {
                 Some(v) => *v += 1,
                 None => {counts.insert(o, 1); ()},
@@ -153,11 +153,11 @@ fn merge(a: &Grid, b: &Grid) -> Grid {
     println!("offset: {:?}", o);
     let mut out = a.beacons.clone();
     for p in &b.beacons {
-        out.insert((p.0-o.0, p.1-o.1, p.2-o.2));
+        out.insert(p.minus(&o));
     }
     let mut o_sensors = a.sensors.clone();
     for p in &b.sensors {
-        o_sensors.insert((p.0-o.0, p.1-o.1, p.2-o.2));
+        o_sensors.insert(p.minus(&o));
     }
     return Grid{beacons: out, sensors: o_sensors};
 }
@@ -169,7 +169,7 @@ fn shrink(input: &Vec<Grid>) -> Vec<Grid> {
     let mut redo = Vec::new();
     let mut merged = HashSet::new();
     for (i, a) in input.iter().enumerate() {
-        let mut out = (*a).clone();
+        let mut out = a.clone();
         let mut parts = HashSet::new();
         parts.insert(i);
         for (j, b) in input.iter().enumerate() {
@@ -224,19 +224,14 @@ fn main() -> std::io::Result<()> {
     while working_set.len() > 1 {
         working_set = shrink(&working_set);
     }
-    let mut part1 = Vec::new();
-    for p in &working_set[0].beacons {
-        part1.push(p);
-    }
-    part1.sort();
-    println!("part1={}", part1.len());
+    let end = working_set.pop().unwrap();
+    println!("part1={}", end.beacons.len());
 
     let mut part2 = 0;
-    for (i, a) in working_set[0].sensors.iter().enumerate() {
-        println!("sensor={:?}", a);
-        for (j, b) in working_set[0].sensors.iter().enumerate() {
+    for (i, a) in end.sensors.iter().enumerate() {
+        for (j, b) in end.sensors.iter().enumerate() {
             if j >= i { continue }
-            let (x, y, z) = a.offset(b);
+            let (x, y, z) = a.minus(b);
             let dist = x.abs() + y.abs() + z.abs();
             if dist > part2 {
                 part2 = dist;
@@ -247,12 +242,3 @@ fn main() -> std::io::Result<()> {
 
     Ok(())
 }
-
-/*
- *  x  y  z
- * -2 -3  1 | l d f
- *  2 -1  3 | r d f
- * -1 -3 -2 | l d b
- *  1  3 -2 | r u b
- *  3  1  2 | r u f
- */
