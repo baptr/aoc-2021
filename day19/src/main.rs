@@ -67,6 +67,17 @@ impl Permutable for Pos {
     }
 }
 
+struct Grid {
+    sensors: HashSet<Pos>,
+    beacons: HashSet<Pos>,
+}
+
+impl Grid {
+    fn clone(&self) -> Self {
+        return Grid{sensors: self.sensors.clone(), beacons: self.beacons.clone()}
+    }
+}
+
 fn dist_set(input: &HashSet<Pos>) -> HashSet<Pos> {
     let mut out = HashSet::new();
     for (i, a) in input.iter().enumerate() {
@@ -81,28 +92,35 @@ fn dist_set(input: &HashSet<Pos>) -> HashSet<Pos> {
                 min = t;
             }
         }
+        // XXX This could fail for eg (0,1)(0,2)(0,3)(0,4)
         out.insert(min);
     }
     return out;
 }
 
-fn orient(a: &HashSet<Pos>, b: &HashSet<Pos>) -> (usize, HashSet<Pos>) {
+fn orient(a: &HashSet<Pos>, b: &Grid) -> (usize, Grid) {
     let base = dist_set(a);
     for axis in 0..6 {
         for neg in 0 .. 4{
             let mut s = HashSet::new();
-            for p in b {
+            for p in &b.beacons {
                 s.insert(p.perm(axis, neg));
             }
+            // TODO: Consider doing dist_set once and rotating it, or finding a way to normalize it
+            // so it doesn't require rotation
             let test = dist_set(&s);
             let i: HashSet<_> = base.intersection(&test).collect();
             if i.len() >= 12 {
-                println!("axis {} neg {} has {} intersections", axis, neg, i.len());
-                return (i.len(), s);
+                // println!("axis {} neg {} has {} intersections", axis, neg, i.len());
+                let mut c = HashSet::new();
+                for p in &b.sensors {
+                    c.insert(p.perm(axis, neg));
+                }
+                return (i.len(), Grid{sensors: c, beacons: s});
             }
         }
     }
-    return (0, HashSet::new());
+    return (0, Grid{beacons: HashSet::new(), sensors: HashSet::new()});
 }
 
 fn find_offset(a: &HashSet<Pos>, b: &HashSet<Pos>) -> Pos {
@@ -130,25 +148,33 @@ fn find_offset(a: &HashSet<Pos>, b: &HashSet<Pos>) -> Pos {
     panic!("no offset, best={:?} with {} matches", best_pos, best);
 }
 
-fn merge(a: &HashSet<Pos>, b: &HashSet<Pos>) -> HashSet<Pos> {
-    let o = find_offset(a, b);
-    let mut out = a.clone();
-    for p in b {
+fn merge(a: &Grid, b: &Grid) -> Grid {
+    let o = find_offset(&a.beacons, &b.beacons);
+    println!("offset: {:?}", o);
+    let mut out = a.beacons.clone();
+    for p in &b.beacons {
         out.insert((p.0-o.0, p.1-o.1, p.2-o.2));
     }
-    return out
+    let mut o_sensors = a.sensors.clone();
+    for p in &b.sensors {
+        o_sensors.insert((p.0-o.0, p.1-o.1, p.2-o.2));
+    }
+    return Grid{beacons: out, sensors: o_sensors};
 }
 
-fn shrink(input: &Vec<HashSet<Pos>>) -> Vec<HashSet<Pos>> {
+fn shrink(input: &Vec<Grid>) -> Vec<Grid> {
+    // TODO: Do this in one pass so N^2 doesn't hurt as much
+    // - find all of the pairings and pairwise orientations and offsets
+    // - merge down once
     let mut redo = Vec::new();
     let mut merged = HashSet::new();
     for (i, a) in input.iter().enumerate() {
-        let mut out = a.clone();
+        let mut out = (*a).clone();
         let mut parts = HashSet::new();
         parts.insert(i);
         for (j, b) in input.iter().enumerate() {
             if i >= j { continue }
-            let (overlap, o) = orient(a, b);
+            let (overlap, o) = orient(&a.beacons, b);
             if overlap >= 12 {
                 println!("#{} matches #{} by {}", i, j, overlap);
                 out = merge(&out, &o);
@@ -187,19 +213,37 @@ fn main() -> std::io::Result<()> {
         scanners[len-1].insert((i[0], i[1], i[2]));
     }
 
-    println!("{:?}", scanners[0]);
+    let mut working_set = Vec::new();
+    // XXX all of these names are trash
+    for s in scanners {
+        let mut sc = HashSet::new();
+        sc.insert((0,0,0));
+        working_set.push(Grid{beacons: s, sensors: sc});
+    }
 
-    let mut redo = shrink(&scanners);
-    while redo.len() > 1 {
-        redo = shrink(&redo);
+    while working_set.len() > 1 {
+        working_set = shrink(&working_set);
     }
     let mut part1 = Vec::new();
-    for p in &redo[0] {
+    for p in &working_set[0].beacons {
         part1.push(p);
     }
     part1.sort();
     println!("part1={}", part1.len());
-    //for p in part1 { println!("{:?}", p); }
+
+    let mut part2 = 0;
+    for (i, a) in working_set[0].sensors.iter().enumerate() {
+        println!("sensor={:?}", a);
+        for (j, b) in working_set[0].sensors.iter().enumerate() {
+            if j >= i { continue }
+            let (x, y, z) = a.offset(b);
+            let dist = x.abs() + y.abs() + z.abs();
+            if dist > part2 {
+                part2 = dist;
+            }
+        }
+    }
+    println!("part2={}", part2);
 
     Ok(())
 }
