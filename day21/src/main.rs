@@ -23,7 +23,7 @@ struct State {
     idx: u8, // 0 based
     score: u16,
     turns: u8,
-    univ: u128,
+    univ: u64,
 }
 
 // possible steps each turn = 3,4,5,6,7,8,9 (with uneven probability)
@@ -57,8 +57,8 @@ fn turn_prob(init_idx: u8) -> HashMap<u8, u64> {
     let mut turn_dist = HashMap::new();
     for s in &done {
         match turn_dist.get_mut(&s.turns) {
-            Some(v) => *v += s.univ as u64,
-            None => {turn_dist.insert(s.turns, s.univ as u64); ()},
+            Some(v) => *v += s.univ,
+            None => {turn_dist.insert(s.turns, s.univ); ()},
         }
     }
     println!("turn dist: {:?}", turn_dist);
@@ -67,7 +67,7 @@ fn turn_prob(init_idx: u8) -> HashMap<u8, u64> {
 
 fn main() -> std::io::Result<()> {
     let a_start = env::args().nth(1).expect("missing position 1").parse::<u32>().unwrap()-1;
-    let b_start = env::args().nth(2).expect("missing position 1").parse::<u32>().unwrap()-1;
+    let b_start = env::args().nth(2).expect("missing position 2").parse::<u32>().unwrap()-1;
 
     let mut a_pos = a_start;
     let mut b_pos = b_start;
@@ -91,7 +91,7 @@ fn main() -> std::io::Result<()> {
         die_start = (die_start+2)%100 + 1;
         rolls += 3;
         if b_score >= 1000 {
-            println!("part2: b win = {}", a_score * rolls);
+            println!("part1: b win = {}", a_score * rolls);
             break;
         }
     }
