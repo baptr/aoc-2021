@@ -41,7 +41,7 @@ impl Cell {
 struct State {
     cost: u32,
     hall: [Cell; 7], // ##_#_#_#_##
-    rooms: [[Cell; 2]; 4], // [door, back]
+    rooms: [[Cell; 4]; 4], // [door..back]
 }
 
 impl Ord for State {
@@ -75,7 +75,9 @@ impl State {
 
     fn done(&self) -> bool {
         for (i, r) in self.rooms.iter().enumerate() {
-            if r[0] as usize != i || r[1] as usize != i { return false }
+            for v in r {
+                if *v as usize != i { return false }
+            }
         }
         return true;
     }
@@ -85,30 +87,34 @@ impl State {
         
         let mut room_open = [false, false, false, false];
         for (i, r) in self.rooms.iter().enumerate() {
-            if r[1] == Cell::Empty || r[1] as usize == i && r[0] == Cell::Empty {
-                room_open[i] = true;
+            let mut ok = true;
+            for v in r {
+                if *v != Cell::Empty && *v as usize != i {
+                    ok = false;
+                    break;
+                }
             }
+            room_open[i] = ok;
         }
 
         // If any hall cells contain pods that can move home, do that.
-        // TODO: Could save some iterations by checking if a pod in the wrong room and move
-        // directly home
         for (i, c) in self.hall.iter().enumerate() {
             let c_idx = *c as usize;
             if *c != Cell::Empty && room_open[c_idx] && !self.blocked(c_idx, i) {
                 let mut hall = self.hall.clone();
                 hall[i] = Cell::Empty;
 
-                let mut dist = (ROOM_POS[c_idx] - HALL_POS[i]).abs() + 1;
+                let mut dist = (ROOM_POS[c_idx] - HALL_POS[i]).abs();
                 let mut rooms = self.rooms.clone();
-                if rooms[c_idx][1] == Cell::Empty {
-                    rooms[c_idx][1] = *c;
-                    dist += 1;
-                } else {
-                    rooms[c_idx][0] = *c;
+                for r_slot in (0..=3).rev() {
+                    if rooms[c_idx][r_slot] == Cell::Empty {
+                        rooms[c_idx][r_slot] = *c;
+                        dist += 1+r_slot as i32;
+                        break;
+                    }
                 }
-                //println!("state: {:?}\nmoving {:?} from hall[{}] = {} to room[{}] = {} is {} steps for {} cost",
-                         //self, *c, i, HALL_POS[i], c_idx, ROOM_POS[c_idx], dist, c.cost(dist));
+                //println!("moving {:?} from hall[{}] = {} to room[{}] = {} is {} steps for {} cost. now: {:?}",
+                         //*c, i, HALL_POS[i], c_idx, ROOM_POS[c_idx], dist, c.cost(dist), rooms);
                 out.push(State{
                     cost: self.cost + c.cost(dist),
                     hall,
@@ -119,14 +125,26 @@ impl State {
 
         // Pick each outer most pod not already home and try each valid position: home if possible,
         // or any open hall cell.
+        // TODO: Could save some iterations by checking if a pod in the wrong room and move
+        // directly home
         for (i, r) in self.rooms.iter().enumerate() {
-            if r[0] as usize == i && r[1] as usize == i { // done
-                continue;
+            let mut room_done = true;
+            let mut room_vacant = true;
+            let mut src = 0;
+            for v in r {
+                if *v != Cell::Empty {
+                    room_vacant = false;
+                }
+                if *v as usize != i {
+                    room_done = false;
+                }
+                if room_vacant { 
+                    src+=1;
+                }
             }
-            if r[0] == Cell::Empty && r[1] == Cell::Empty { // vacant
-                continue;
-            }
-            let src = if r[0] == Cell::Empty { 1 } else { 0 };
+            if room_done { continue }
+            if room_vacant { continue }
+
             let c = r[src];
             for (h, s) in self.hall.iter().enumerate() {
                 if *s != Cell::Empty { continue }
@@ -164,15 +182,15 @@ fn main() -> std::io::Result<()> {
         cost: 0,
         hall: [Cell::Empty; 7],
         rooms: [
-            [Cell::A, Cell::D],
-            [Cell::C, Cell::D],
-            [Cell::B, Cell::B],
-            [Cell::A, Cell::C],
+            [Cell::A, Cell::D, Cell::D, Cell::D],
+            [Cell::C, Cell::C, Cell::B, Cell::D],
+            [Cell::B, Cell::B, Cell::A, Cell::B],
+            [Cell::A, Cell::A, Cell::C, Cell::C],
             /*
-            [Cell::B, Cell::A],
-            [Cell::C, Cell::D],
-            [Cell::B, Cell::C],
-            [Cell::D, Cell::A],
+            [Cell::B, Cell::D, Cell::D, Cell::A],
+            [Cell::C, Cell::C, Cell::B, Cell::D],
+            [Cell::B, Cell::B, Cell::A, Cell::C],
+            [Cell::D, Cell::A, Cell::C, Cell::A],
             */
         ],
     };
@@ -180,8 +198,8 @@ fn main() -> std::io::Result<()> {
     //let mut end = init.clone(); // hax
     let mut pending = BinaryHeap::new();
     let mut cost = BTreeMap::new();
-    let mut seen = BTreeMap::new();
-    seen.insert(init.clone(), init.clone());
+    //let mut seen = BTreeMap::new();
+    //seen.insert(init.clone(), init.clone());
     cost.insert(init.clone(), 0);
     pending.push(init);
 
@@ -211,7 +229,6 @@ fn main() -> std::io::Result<()> {
         println!("Prev: {:?}", end);
     }
     */
-
 
     Ok(())
 }
