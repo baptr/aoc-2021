@@ -1,0 +1,255 @@
+inp w     w = first digit
+mul x 0   // nop
+add x z   // nop
+mod x 26  // nop
+div z 1   nop
+add x 15  x=15
+eql x w   x =  w==15
+eql x 0   x = w!=15
+mul y 0   nop
+add y 25  y=25
+mul y x   y = 25*(w!=15)
+add y 1   y = 25*(w!=15)+1
+mul z y   nop
+mul y 0   y=0
+add y w   y=w
+add y 4   y=w+4
+mul y x   y=(w+4) * (w!=15)
+add z y   z=(w+4) * (w!=15)
+inp w     w = d[1]
+mul x 0   x = 0
+add x z   x=(d[0]+4) * (d[0] != 15)
+mod x 26  x=((d[0]+4) * (d[0] != 15)) % 26
+div z 1   nop
+add x 14  x=((d[0]+4) * (d[0] != 15)) % 26 + 14
+eql x w   x= (((d[0]+4) * (d[0] != 15)) % 26 + 14) == d[1]
+eql x 0   x= (((d[0]+4) * (d[0] != 15)) % 26 + 14) != d[1]
+mul y 0   y=0
+add y 25  y=25
+mul y x   y= ((((d[0]+4) * (d[0] != 15)) % 26 + 14) != d[1]) * 25
+add y 1   y = ((((d[0]+4) * (d[0] != 15)) % 26 + 14) != d[1]) * 25 + 1
+mul z y   z = (d[0]+4) * (d[0]!=15) * (((((d[0]+4) * (d[0] != 15)) % 26 + 14) != d[1]) * 25 + 1)
+mul y 0
+add y w
+add y 16
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 11
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 14
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 3
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 14
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 11
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 15
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 13
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -7
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 11
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 7
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -12
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 12
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 15
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 15
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -16
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 13
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -9
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 1
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -8
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 15
+mul y x
+add z y
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -8
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 4
+mul y x y=y*x | vv : 
+add z y z=z+y : z=0 & y=0 || z=-y
+
+// 32294891961529
+// 44877764522618
